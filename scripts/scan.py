@@ -26,8 +26,22 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 
-USER_AGENT = "NUD-dashboard-scan/0.1 (manual; +https://github.com/z6johnson/ai-he-international)"
+# Substack, beehiiv, and WordPress WAFs (Cloudflare et al.) reject obvious
+# bot user-agents — and sometimes datacenter IPs outright. Browser-grade
+# headers get past the UA gate; the IP gate has no header fix, which is why
+# running the scan from a residential machine succeeds where CI may not.
+FETCH_HEADERS = {
+    "User-Agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                   "AppleWebKit/537.36 (KHTML, like Gecko) "
+                   "Chrome/126.0.0.0 Safari/537.36"),
+    "Accept": ("application/rss+xml, application/atom+xml, "
+               "application/xml;q=0.9, text/html;q=0.8, */*;q=0.7"),
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip",
+}
 TIMEOUT = 15
+RETRIES = 3          # attempts per URL for 403/429/5xx/network errors
+RETRY_DELAY = 2      # seconds, doubles per attempt
 SUMMARY_MAX = 300
 
 LAYERS = {"ongoing", "strategic", "founding"}
@@ -125,9 +139,53 @@ def strip_html(text):
 # ---------------------------------------------------------------- feed parse
 
 def fetch(url):
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-        return resp.read()
+    import gzip
+    import time
+    last_exc = None
+    for attempt in range(RETRIES):
+        try:
+            req = urllib.request.Request(url, headers=FETCH_HEADERS)
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+                raw = resp.read()
+                if resp.headers.get("Content-Encoding", "") == "gzip":
+                    raw = gzip.decompress(raw)
+                return raw
+        except urllib.error.HTTPError as exc:
+            last_exc = exc
+            if exc.code not in (403, 408, 429, 500, 502, 503, 504):
+                raise  # 404 etc.: retrying won't help
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            last_exc = exc
+        if attempt < RETRIES - 1:
+            time.sleep(RETRY_DELAY * (2 ** attempt))
+    raise last_exc
+
+
+FEED_LINK_RE = re.compile(
+    r'<link[^>]+(?:type=["\']application/(?:rss|atom)\+xml["\'][^>]*'
+    r'href=["\']([^"\']+)["\']|href=["\']([^"\']+)["\'][^>]*'
+    r'type=["\']application/(?:rss|atom)\+xml["\'])',
+    re.IGNORECASE,
+)
+
+
+def discover_feed(home_url):
+    """Best-effort <link rel="alternate"> feed discovery from a homepage.
+
+    Platforms like beehiiv serve RSS from a non-obvious host
+    (rss.beehiiv.com/feeds/<id>.xml), so a hardcoded <domain>/feed 404s.
+    Returns an absolute feed URL or None.
+    """
+    try:
+        html_bytes = fetch(home_url)
+    except Exception:
+        return None
+    text = html_bytes.decode("utf-8", errors="replace")
+    m = FEED_LINK_RE.search(text)
+    if not m:
+        return None
+    href = m.group(1) or m.group(2)
+    return urllib.parse.urljoin(home_url, href.strip())
 
 
 def local_name(tag):
@@ -275,10 +333,26 @@ def main():
         if not targets:
             sys.exit(f"error: no active rss source with id {args.source!r}")
 
+    def fetch_source_feed(src):
+        """Fetch and parse the configured feed; on 404 or non-XML, try
+        auto-discovering the real feed URL from the source's homepage."""
+        try:
+            return parse_feed(fetch(src["rss"]))
+        except (urllib.error.HTTPError, ET.ParseError, ValueError) as exc:
+            if isinstance(exc, urllib.error.HTTPError) and exc.code != 404:
+                raise
+            alt = discover_feed(src["url"])
+            if not alt or alt == src["rss"]:
+                raise
+            entries = parse_feed(fetch(alt))
+            print(f"NOTE  {src['id']}: configured rss failed ({exc}); "
+                  f"discovered {alt} — pin it in data/sources.js")
+            return entries
+
     new_items, failures = [], []
     for src in targets:
         try:
-            entries = parse_feed(fetch(src["rss"]))
+            entries = fetch_source_feed(src)
         except Exception as exc:  # noqa: BLE001 — one dead feed must not kill the run
             failures.append(src["id"])
             print(f"FAIL  {src['id']}: {exc}")

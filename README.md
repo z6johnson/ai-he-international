@@ -71,6 +71,18 @@ RSS/Atom parsing); it needs no search agent, LLM, or API key. The only human (or
 LLM-assisted) step is triage: writing the "why it matters" line for items that
 arrive flagged `UNTRIAGED`.
 
+**Known limitation — bot-blocked feeds:** Substack and some WordPress sites sit
+behind Cloudflare-style bot mitigation that can reject requests from datacenter
+IPs (including GitHub Actions runners) with `403 Forbidden`, regardless of
+headers. The scanner sends browser-grade headers and retries with backoff, which
+helps but is not a guarantee. The reliable complement is an occasional local run
+(`python3 scripts/scan.py` from your own machine, then commit) — scans are
+idempotent, so CI and local runs interleave safely. The scanner also
+auto-discovers a feed's real URL from the site's `<link rel="alternate">` when
+the configured one 404s (e.g. beehiiv publications, whose RSS lives at
+`rss.beehiiv.com/feeds/<id>.xml`) and prints the discovered URL so you can pin
+it in `data/sources.js`.
+
 Data files use a strict sentinel format (comment line, `window.NAME =`, pretty-printed
 JSON, closing `;`) that `scan.py` round-trips. Edit the JSON body only.
 

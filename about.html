@@ -66,6 +66,7 @@ python3 scripts/scan.py             # append new items + update meta
 python3 scripts/scan.py --check     # lint data integrity</pre>
     <p>After a scan: open the Activity page, review items marked <code>UNTRIAGED</code>, fill in their <code>why</code> field in <code>data/items.js</code>, set <code>needs_review</code> to <code>false</code>, bump the baseline date in <code>data/meta.js</code>, and commit. Sources with no machine feed (most report publishers and observatories) are marked <code>MANUAL</code> on the Sources page — they are covered by periodic web-research passes, not the scan.</p>
     <p>The scan also runs automatically every Monday via GitHub Actions (<code>.github/workflows/scan.yml</code>); when the repo is connected to Vercel, each ingest commit triggers a redeploy, so the feed refreshes itself. The scanner is deterministic RSS/Atom ingestion — no search agent, LLM, or API key involved. Only triage is a judgment step.</p>
+    <p>Some sources (notably the Substacks) sit behind bot mitigation that can reject datacenter IPs — including CI runners — with 403s. The scanner retries with browser-grade headers, but the reliable complement is an occasional local run from your own machine; scans are idempotent, so the two interleave safely.</p>
 
     <h2>Data status</h2>
     <table class="data-status" id="status-table">
