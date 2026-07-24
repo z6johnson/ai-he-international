@@ -71,17 +71,26 @@ RSS/Atom parsing); it needs no search agent, LLM, or API key. The only human (or
 LLM-assisted) step is triage: writing the "why it matters" line for items that
 arrive flagged `UNTRIAGED`.
 
-**Known limitation — bot-blocked feeds:** Substack and some WordPress sites sit
-behind Cloudflare-style bot mitigation that can reject requests from datacenter
+**Bot-blocked feeds and the mirror fallback:** Substack and some WordPress sites
+sit behind Cloudflare-style bot mitigation that rejects requests from datacenter
 IPs (including GitHub Actions runners) with `403 Forbidden`, regardless of
-headers. The scanner sends browser-grade headers and retries with backoff, which
-helps but is not a guarantee. The reliable complement is an occasional local run
-(`python3 scripts/scan.py` from your own machine, then commit) — scans are
-idempotent, so CI and local runs interleave safely. The scanner also
-auto-discovers a feed's real URL from the site's `<link rel="alternate">` when
-the configured one 404s (e.g. beehiiv publications, whose RSS lives at
-`rss.beehiiv.com/feeds/<id>.xml`) and prints the discovered URL so you can pin
-it in `data/sources.js`.
+headers. The scanner responds in three layers:
+
+1. Browser-grade headers with retry/backoff (helps where the block is UA-based);
+2. Feed auto-discovery from the site's `<link rel="alternate">` when the
+   configured URL 404s (e.g. beehiiv publications, whose RSS lives at
+   `rss.beehiiv.com/feeds/<id>.xml`), printing the discovered URL so you can pin
+   it in `data/sources.js`;
+3. A mirror fallback via [Open RSS](https://openrss.org) — a free, non-commercial
+   feed proxy built for exactly this problem — tried automatically when the
+   origin blocks or breaks. Mirrored entries link to the original articles, so
+   URL-based dedupe stays consistent. Every mirror ingest is logged with a
+   `NOTE` line. Override or disable with the `NUD_SCAN_MIRROR` env var.
+
+If a source fails all three layers, an occasional local run
+(`python3 scripts/scan.py` from your own machine, then commit) remains the
+reliable complement — scans are idempotent, so CI and local runs interleave
+safely.
 
 Data files use a strict sentinel format (comment line, `window.NAME =`, pretty-printed
 JSON, closing `;`) that `scan.py` round-trips. Edit the JSON body only.
