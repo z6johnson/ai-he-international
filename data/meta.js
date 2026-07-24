@@ -8,7 +8,7 @@ window.NUD_META =
   "counts": {
     "entities": 51,
     "sources": 13,
-    "items": 56
+    "items": 93
   },
   "stale_after_days": 30
 }
