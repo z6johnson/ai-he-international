@@ -26,7 +26,20 @@ python3 -m http.server 8000
 ```
 
 Data lives in `data/*.js` as `window.*` globals (not fetched JSON) so the site works
-identically on GitHub Pages, a local server, and `file://`.
+identically on Vercel, GitHub Pages, a local server, and `file://`.
+
+## Deploying to Vercel
+
+The repo is a zero-build static Vercel app — `vercel.json` provides clean URLs
+(`/activity` instead of `/activity.html`), security headers, and cache policy.
+Two ways to deploy:
+
+1. **Git integration (recommended):** [vercel.com/new](https://vercel.com/new) →
+   import `z6johnson/ai-he-international` → keep every setting on its default
+   (no framework, no build command, output = repo root) → Deploy. Every push
+   after that redeploys automatically, which is what makes the scheduled scan
+   (below) self-updating.
+2. **CLI:** `npx vercel` from the repo root, accept the defaults.
 
 ## The three-layer model
 
@@ -48,6 +61,27 @@ The scan script is stdlib-only Python. It dedupes by normalized URL, so repeated
 are idempotent. Newly scanned items arrive marked `UNTRIAGED` — review them, write the
 "why it matters" line in `data/items.js`, set `needs_review` to `false`, and bump
 `baseline_date`/`baseline_version` in `data/meta.js`.
+
+**Automated aggregation:** `.github/workflows/scan.yml` runs the same scan every
+Monday 06:00 UTC (or on demand from the Actions tab) and commits new items when it
+finds any. With the Vercel git integration connected, that commit triggers a
+redeploy — so the dashboard refreshes itself weekly with no manual step and no
+external services. The scanner is deterministic feed ingestion (plain HTTP +
+RSS/Atom parsing); it needs no search agent, LLM, or API key. The only human (or
+LLM-assisted) step is triage: writing the "why it matters" line for items that
+arrive flagged `UNTRIAGED`.
+
+**Known limitation — bot-blocked feeds:** Substack and some WordPress sites sit
+behind Cloudflare-style bot mitigation that can reject requests from datacenter
+IPs (including GitHub Actions runners) with `403 Forbidden`, regardless of
+headers. The scanner sends browser-grade headers and retries with backoff, which
+helps but is not a guarantee. The reliable complement is an occasional local run
+(`python3 scripts/scan.py` from your own machine, then commit) — scans are
+idempotent, so CI and local runs interleave safely. The scanner also
+auto-discovers a feed's real URL from the site's `<link rel="alternate">` when
+the configured one 404s (e.g. beehiiv publications, whose RSS lives at
+`rss.beehiiv.com/feeds/<id>.xml`) and prints the discovered URL so you can pin
+it in `data/sources.js`.
 
 Data files use a strict sentinel format (comment line, `window.NAME =`, pretty-printed
 JSON, closing `;`) that `scan.py` round-trips. Edit the JSON body only.
