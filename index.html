@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NUD Intelligence Dashboard</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="home">
+
+<header class="masthead">
+  <div class="wrap">
+    <a class="wordmark" href="index.html"><span class="mark">NUD</span><span class="sub">Intelligence Dashboard</span></a>
+    <nav class="main-nav">
+      <a href="index.html" class="active">Home</a>
+      <a href="sources.html">Sources</a>
+      <a href="activity.html">Activity</a>
+      <a href="brief.html">Brief</a>
+      <a href="about.html">About</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div class="crumb">NUD · Overview</div>
+    <h1 class="headline">Intelligence for building an AI-native university that the rankings — and the skeptics — will take seriously.</h1>
+  </div>
+
+  <div class="posture">
+    <p>NUD is an engagement to launch a new AI-native university in the UAE with a top-200-in-20-years ambition. That makes the project operational, strategic, and Gulf-institution-founding at the same time — and no single literature covers all three. This dashboard tracks the curated source base across three layers: the <strong>ongoing</strong> sources that compound (newsletters, podcasts, observatories), the <strong>strategic core</strong> on assessment, credentialing, and what a university is, and the <strong>founding</strong> layer covering building universities from scratch, the UAE regulatory machinery, and the rankings mechanics behind a top-200 ambition.</p>
+    <p>The operating stance is skeptical by design. "AI-native university" is applied loosely, often as branding — no proven model exists yet, including among the institutions tracked here. Much Gulf-facing material is promotional: government and institutional sources are read for intent and ambition, always alongside independent analysts and journalism. Any report older than about twelve months is treated as historical context, not current state.</p>
+  </div>
+
+  <div class="stat-tiles" id="stat-tiles"></div>
+
+  <div class="section-head">
+    <h2>Key tensions on the board</h2>
+    <span class="micro">Design problems, not comms problems</span>
+  </div>
+  <div class="tensions">
+    <div class="tension">
+      <div class="t-num">01</div>
+      <div>
+        <h3>Rankings speed vs. a rigor-branded identity</h3>
+        <p>The fastest rankings strategies — aggressive citation-based hiring, publication-volume incentives — conflict directly with a rigor-branded institutional identity. THE's flagship ranking needs roughly 1,000 publications over five years just for eligibility. The tension between the ranking goal and the intellectual-economy goal is a real design problem.</p>
+        <a class="t-link" href="activity.html#scope=rankings">View rankings intelligence →</a>
+      </div>
+    </div>
+    <div class="tension">
+      <div class="t-num">02</div>
+      <div>
+        <h3>Federal CAA vs. Dubai free-zone KHDA/UQAIB</h3>
+        <p>UAE higher education runs two parallel accreditation systems, and where NUD sits is a founding decision with permanent consequences: it determines whose degrees are recognized where, who can enroll, and how fast programs can launch. MoHESR moves to license free-zone institutions federally are starting to bridge the gap — 16 institutions now hold both — and Federal Decree-Law 31 of 2025, effective January 2026, now unifies licensing across all free zones.</p>
+        <a class="t-link" href="activity.html#scope=regulatory">View regulatory intelligence →</a>
+      </div>
+    </div>
+    <div class="tension">
+      <div class="t-num">03</div>
+      <div>
+        <h3>Mastery-based progression vs. visa frameworks</h3>
+        <p>Dubai ties post-study residence to employment, and visa frameworks assume fixed-duration programs. NUD's mastery-based, time-variable progression model will collide with them. No single good source exists yet — this is tracked as a risk to research, not a solved problem.</p>
+        <a class="t-link" href="activity.html#scope=regulatory&region=gulf">View UAE items →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <h2>Latest activity</h2>
+    <a class="micro" href="activity.html">Full scan →</a>
+  </div>
+  <div class="feed" id="home-feed"></div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="micro">NUD Intelligence Dashboard</div>
+    <div class="footer-status" id="data-status"></div>
+  </div>
+</footer>
+
+<script src="data/meta.js"></script>
+<script src="data/entities.js"></script>
+<script src="data/sources.js"></script>
+<script src="data/items.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

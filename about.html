@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About — NUD Intelligence Dashboard</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="about">
+
+<header class="masthead">
+  <div class="wrap">
+    <a class="wordmark" href="index.html"><span class="mark">NUD</span><span class="sub">Intelligence Dashboard</span></a>
+    <nav class="main-nav">
+      <a href="index.html">Home</a>
+      <a href="sources.html">Sources</a>
+      <a href="activity.html">Activity</a>
+      <a href="brief.html">Brief</a>
+      <a href="about.html" class="active">About</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div class="crumb">NUD · About</div>
+    <h1 class="headline">Methodology and data status.</h1>
+    <hr class="rule">
+  </div>
+
+  <div class="prose">
+    <p style="margin-top: 26px;">This dashboard supports a strategy engagement to launch a new AI-native university in the UAE ("NUD") with a top-200-in-20-years ranking ambition. It turns a curated source list on AI in global higher education into a working intelligence tool: a tracked watch list, a scan-style activity feed, and a prioritized reading brief. It is a static site — no server, no tracking, no external requests at runtime.</p>
+
+    <h2>The three-layer model</h2>
+    <dl>
+      <dt>Ongoing</dt>
+      <dd>Sources that compound: independent thinkers publishing continuously, and observatories tracking the field. These stay current in a way no report can.</dd>
+      <dt>Strategic core</dt>
+      <dd>Assessment, credentialing, and what a university is — the intellectual foundation for an institution planning witnessed human performance as its credential basis.</dd>
+      <dt>Founding</dt>
+      <dd>Building universities from scratch, the UAE regulatory machinery, Gulf strategy, and the rankings mechanics behind a top-200 ambition.</dd>
+    </dl>
+
+    <h2>Tiers and provenance</h2>
+    <dl>
+      <dt>Tier 1 / Tier 2</dt>
+      <dd>Tier 1 sources are primary — followed continuously and weighted first. Tier 2 are secondary or contextual.</dd>
+      <dt>Provenance: <code>pdf</code></dt>
+      <dd>Item derives from the founding source document (the NUD engagement source list).</dd>
+      <dt>Provenance: <code>websearch</code></dt>
+      <dd>Item found through targeted web research during a curation pass.</dd>
+      <dt>Provenance: <code>scan</code></dt>
+      <dd>Item ingested automatically from a tracked RSS/Atom feed by the scan script.</dd>
+      <dt><span class="tag-untriaged" style="margin-left:0">UNTRIAGED</span></dt>
+      <dd>A scanned item no human has reviewed yet: its "why it matters" line is empty and its facets are inherited from its source. Triage means reading it, writing the why-line, correcting facets, and clearing the flag.</dd>
+    </dl>
+
+    <h2>The staleness rule</h2>
+    <p>Any report older than about twelve months is historical context, not current state. The footer's <code>DATA STATUS</code> line shows the baseline date — the last full human curation pass — and turns orange when it ages past 30 days. A stale baseline means the dashboard needs a scan and a triage pass, not that the sources are wrong.</p>
+
+    <h2 id="scan">How to run a scan</h2>
+    <p>The scan script pulls tracked RSS/Atom feeds and appends new, deduplicated items to the data files. It is stdlib-only Python — no dependencies. From the repository root:</p>
+    <pre>python3 scripts/scan.py --dry-run   # preview what would be added
+python3 scripts/scan.py             # append new items + update meta
+python3 scripts/scan.py --check     # lint data integrity</pre>
+    <p>After a scan: open the Activity page, review items marked <code>UNTRIAGED</code>, fill in their <code>why</code> field in <code>data/items.js</code>, set <code>needs_review</code> to <code>false</code>, bump the baseline date in <code>data/meta.js</code>, and commit. Sources with no machine feed (most report publishers and observatories) are marked <code>MANUAL</code> on the Sources page — they are covered by periodic web-research passes, not the scan.</p>
+
+    <h2>Data status</h2>
+    <table class="data-status" id="status-table">
+      <tr><th>Baseline</th><td id="st-baseline">—</td></tr>
+      <tr><th>Baseline date</th><td id="st-date">—</td></tr>
+      <tr><th>Last scan</th><td id="st-scan">—</td></tr>
+      <tr><th>Entities</th><td id="st-entities">—</td></tr>
+      <tr><th>Sources</th><td id="st-sources">—</td></tr>
+      <tr><th>Items</th><td id="st-items">—</td></tr>
+      <tr><th>Untriaged</th><td id="st-untriaged">—</td></tr>
+    </table>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="micro">NUD Intelligence Dashboard</div>
+    <div class="footer-status" id="data-status"></div>
+  </div>
+</footer>
+
+<script src="data/meta.js"></script>
+<script src="data/entities.js"></script>
+<script src="data/sources.js"></script>
+<script src="data/items.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
