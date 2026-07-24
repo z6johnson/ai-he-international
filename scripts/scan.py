@@ -16,6 +16,7 @@ import argparse
 import datetime
 import html
 import json
+import os
 import re
 import sys
 import urllib.parse
@@ -43,6 +44,13 @@ TIMEOUT = 15
 RETRIES = 3          # attempts per URL for 403/429/5xx/network errors
 RETRY_DELAY = 2      # seconds, doubles per attempt
 SUMMARY_MAX = 300
+
+# Feed-mirror fallback for sources whose CDN blocks datacenter IPs outright
+# (Substack et al. 403 GitHub Actions runners regardless of headers).
+# Open RSS (openrss.org) is a free, non-commercial feed proxy built for
+# exactly this; its entries link to the original articles, so URL-based
+# dedupe stays consistent between direct and mirrored runs.
+MIRROR_BASE = os.environ.get("NUD_SCAN_MIRROR", "https://openrss.org")
 
 LAYERS = {"ongoing", "strategic", "founding"}
 CATEGORIES = {
@@ -333,21 +341,47 @@ def main():
         if not targets:
             sys.exit(f"error: no active rss source with id {args.source!r}")
 
+    def mirror_candidates(src):
+        """Mirror URLs to try when the origin blocks us: the mirrored feed
+        path first, then the mirrored homepage (Open RSS can generate a
+        feed from a site root when the /feed path itself is wrong)."""
+        urls = []
+        for direct in (src["rss"], src["url"]):
+            p = urllib.parse.urlsplit(direct)
+            mirrored = f"{MIRROR_BASE}/{p.netloc}{p.path}".rstrip("/")
+            if mirrored not in urls:
+                urls.append(mirrored)
+        return urls
+
     def fetch_source_feed(src):
-        """Fetch and parse the configured feed; on 404 or non-XML, try
-        auto-discovering the real feed URL from the source's homepage."""
+        """Fetch and parse the configured feed. On 404/non-XML, try feed
+        auto-discovery from the homepage; if the origin blocks or breaks,
+        fall back to the Open RSS mirror."""
         try:
             return parse_feed(fetch(src["rss"]))
-        except (urllib.error.HTTPError, ET.ParseError, ValueError) as exc:
-            if isinstance(exc, urllib.error.HTTPError) and exc.code != 404:
-                raise
-            alt = discover_feed(src["url"])
-            if not alt or alt == src["rss"]:
-                raise
-            entries = parse_feed(fetch(alt))
-            print(f"NOTE  {src['id']}: configured rss failed ({exc}); "
-                  f"discovered {alt} — pin it in data/sources.js")
-            return entries
+        except (urllib.error.HTTPError, urllib.error.URLError,
+                ET.ParseError, ValueError, TimeoutError, OSError) as exc:
+            not_found = (isinstance(exc, urllib.error.HTTPError) and exc.code == 404) \
+                or isinstance(exc, (ET.ParseError, ValueError))
+            if not_found:
+                alt = discover_feed(src["url"])
+                if alt and alt != src["rss"]:
+                    try:
+                        entries = parse_feed(fetch(alt))
+                        print(f"NOTE  {src['id']}: configured rss failed ({exc}); "
+                              f"discovered {alt} — pin it in data/sources.js")
+                        return entries
+                    except Exception:  # noqa: BLE001 — fall through to mirror
+                        pass
+            for mirrored in mirror_candidates(src):
+                try:
+                    entries = parse_feed(fetch(mirrored))
+                    print(f"NOTE  {src['id']}: origin failed ({exc}); "
+                          f"ingested via mirror {mirrored}")
+                    return entries
+                except Exception:  # noqa: BLE001 — try next candidate
+                    continue
+            raise
 
     new_items, failures = [], []
     for src in targets:
