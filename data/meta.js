@@ -3,12 +3,12 @@ window.NUD_META =
 {
   "baseline_version": "0.1.0",
   "baseline_date": "2026-07-24",
-  "last_scan": "2026-11-09",
+  "last_scan": "2026-11-16",
   "generated_by": "seed",
   "counts": {
     "entities": 51,
     "sources": 13,
-    "items": 405
+    "items": 426
   },
   "stale_after_days": 30
 }
